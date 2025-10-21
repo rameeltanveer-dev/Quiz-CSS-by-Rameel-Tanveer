@@ -177,3 +177,6 @@ function sendToWebhook(name, score, total, percent, answers) {
     .then(() => console.log("✅ Data sent to webhook"))
     .catch(err => console.error("❌ Webhook Error:", err));
 }
+function doGet(e) {
+  return HtmlService.createHtmlOutputFromFile('index'); // index.html آپ کی file کا name
+}
