@@ -421,3 +421,25 @@ closeAttemptsBtn.addEventListener('click', ()=> allAttemptsSection.classList.add
 function doGet(e) {
   return ContentService.createTextOutput("Hello, this is working!");
 }
+function sendQuizDataToSheet(name, correct, wrong, percent, timeLeft) {
+  const webhookURL = document.getElementById("webhookInput").value;
+
+  const data = {
+    name: name,
+    correct: correct,
+    wrong: wrong,
+    percent: percent,
+    timeLeft: timeLeft
+  };
+
+  fetch(webhookURL, {
+    method: "POST",
+    contentType: "application/json",
+    body: JSON.stringify(data)
+  })
+  .then(res => res.text())
+  .then(msg => console.log("Data sent:", msg))
+  .catch(err => console.error("Error:", err));
+}
+
+sendQuizDataToSheet(userName, correctCount, wrongCount, percentScore, remainingSeconds);
