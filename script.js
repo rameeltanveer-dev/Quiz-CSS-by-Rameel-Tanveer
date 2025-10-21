@@ -392,3 +392,29 @@ function sendAttemptToServer(name, resultObj){
 
 // یہ فنکشن finishQuiz() میں پہلے ہی call ہو رہا ہے:
 // sendAttemptToServer(userName, resultObj).then(...).catch(...);
+
+const allAttemptsSection = document.getElementById('allAttemptsSection');
+const attemptsTableBody = document.querySelector('#attemptsTable tbody');
+const closeAttemptsBtn = document.getElementById('closeAttemptsBtn');
+
+exportDataBtn.addEventListener('click', ()=> {
+  // Show table instead of download
+  attemptsTableBody.innerHTML = ''; // clear
+  const raw = localStorage.getItem(attemptedKey) || '{}';
+  let parsed = {};
+  try{
+    parsed = JSON.parse(raw);
+  } catch(e){ console.error(e); }
+  
+  Object.keys(parsed).forEach(name=>{
+    const r = parsed[name].result;
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${name}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${r.percent}%</td><td>${formatTime(r.timeLeft)}</td>`;
+    attemptsTableBody.appendChild(tr);
+  });
+
+  allAttemptsSection.classList.remove('hidden');
+});
+
+// Close button
+closeAttemptsBtn.addEventListener('click', ()=> allAttemptsSection.classList.add('hidden'));
