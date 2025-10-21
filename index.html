@@ -111,7 +111,24 @@
       </div>
     </div>
   </div>
+<form action="PASTE_YOUR_DEPLOYED_URL_HERE" method="post">
+  <label>Student Name:</label><br>
+  <input type="text" name="name" required><br><br>
 
+  <label>Correct Answers:</label><br>
+  <input type="number" name="correct" required><br><br>
+
+  <label>Wrong Answers:</label><br>
+  <input type="number" name="wrong" required><br><br>
+
+  <label>Percentage (%):</label><br>
+  <input type="number" name="percent" step="0.01" required><br><br>
+
+  <label>Time Left (seconds):</label><br>
+  <input type="number" name="timeleft" required><br><br>
+
+  <button type="submit">Submit Quiz</button>
+</form>
   <script src="script.js"></script>
 </body>
 </html>
