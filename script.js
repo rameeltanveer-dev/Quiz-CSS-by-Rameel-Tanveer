@@ -459,4 +459,21 @@ function sendQuizDataToSheet(name, correct, wrong, percent, timeLeft) {
   .then(data => console.log("✅ Data saved:", data))
   .catch(err => console.error("❌ Error:", err));
 }
+function doPost(e) {
+  const sheet = SpreadsheetApp.openById("1odcLk_CeKcsQUbqMDk7OcoXgLnpyVyMmO_TjeKhfn2I");
+  const ws = sheet.getSheetByName("Sheet1");
+
+  const data = JSON.parse(e.postData.contents);
+
+  ws.appendRow([
+    new Date(),
+    data.name,
+    data.correct,
+    data.wrong,
+    data.percent,
+    data.timeLeft
+  ]);
+
+  return ContentService.createTextOutput("Success");
+}
 sendQuizDataToSheet(userName, correctCount, wrongCount, percentScore, remainingSeconds);
