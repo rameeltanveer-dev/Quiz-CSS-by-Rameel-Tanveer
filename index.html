@@ -13,17 +13,19 @@
       <div class="card small">
         <h1>CSS Quiz - Created by Rameel Tanveer</h1>
         <p class="muted">Enter your name to start. One attempt per name.</p>
+
+        <!-- Name Input -->
         <input id="nameInput" type="text" placeholder="Your full name" />
-        <div style="margin-top:8px; text-align:left;">
-          <label class="small muted">Webhook URL (optional, for admin):</label>
-          <input id="webhookInput" type="text" placeholder="https://script.google.com/macros/s/xxx/exec" />
-          <div style="display:flex; gap:8px; margin-top:6px;">
-            <button id="saveWebhookBtn" class="btn ghost">Save Webhook</button>
-            <button id="clearWebhookBtn" class="btn ghost">Clear Webhook</button>
-          </div>
-          <div id="webhookMsg" class="small muted" style="margin-top:6px;"></div>
+
+        <!-- Webhook Input -->
+        <label class="small muted">Webhook URL (optional, for admin):</label>
+        <input id="webhookInput" type="text" placeholder="https://script.google.com/macros/s/AKfycbx5mPGLMUXGsCcADkSD09ryOJcZEI9LHsJKMfwU_DCNNWrfdBUVUTyawCL1YVl_rpPS/exec" />
+        <div style="display:flex; gap:8px; margin-top:6px;">
+          <button id="saveWebhookBtn" class="btn ghost">Save Webhook</button>
+          <button id="clearWebhookBtn" class="btn ghost">Clear Webhook</button>
         </div>
-        <div class="actions">
+
+        <div class="actions" style="margin-top:10px;">
           <button id="startWithName" class="btn primary">Start Quiz</button>
         </div>
         <p id="loginMsg" class="muted small"></p>
@@ -89,28 +91,8 @@
       </div>
     </div>
   </div>
-<div id="name-section">
-  <h2>CSS Quiz - Created by Rameel Tanveer</h2>
-  <input type="text" id="username" placeholder="Enter your name" />
-  <button id="start-btn">Start Quiz</button>
-</div>
 
-<div id="quiz-section" style="display:none;">
-  <div id="timer"></div>
-  <div id="question-container"></div>
-  <button id="next-btn">Next</button>
-</div>
-
-<div id="result-section" style="display:none;">
-  <h2>Quiz Result</h2>
-  <p id="score"></p>
-  <p id="percentage"></p>
-</div>
-
-<footer>CSS Quiz - Created by Rameel Tanveer</footer>
-
-<script src="script.js"></script>
+  <footer>CSS Quiz - Created by Rameel Tanveer</footer>
+  <script src="script.js"></script>
 </body>
-</html>
-</body>
-</html>
+  </html>
