@@ -178,5 +178,7 @@ function sendToWebhook(name, score, total, percent, answers) {
     .catch(err => console.error("❌ Webhook Error:", err));
 }
 function doGet(e) {
-  return HtmlService.createHtmlOutputFromFile('index'); // index.html آپ کی file کا name
+  return HtmlService.createHtmlOutputFromFile('index'); 
+    .setTitle('CSS Quiz — Rameel Tanveer');
 }
+
