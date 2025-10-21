@@ -1,68 +1,264 @@
-:root{
-  --bg:#08121a;
-  --accent:#00e5ff;
-  --muted:rgba(255,255,255,0.7);
-  --glass:rgba(255,255,255,0.03);
-  --success:#28a745;
-  --danger:#dc3545;
-  --radius:12px;
+/* style.css - External CSS for CSS Quiz App */
+
+/* General reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
 }
-*{box-sizing:border-box}
-body{margin:0;min-height:100vh;font-family:Inter,system-ui,Arial,sans-serif;background:
-linear-gradient(180deg,#041014,#07212a);color:#eaf6fb;display:flex;align-items:center;justify-content:center;padding:22px}
-.app{width:100%;max-width:960px}
 
-/* cards & center */
-.card{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:14px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 12px 40px rgba(0,0,0,0.6)}
-.small{max-width:420px;margin:auto;text-align:center;padding:22px}
-.center{display:flex;align-items:center;justify-content:center;min-height:70vh}
+/* Body */
+body {
+  background: #f5f7fa;
+  color: #333;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
 
-/* login */
-input[type="text"]{width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.06);background:transparent;color:#eaf6fb;margin-top:10px}
-.actions{margin-top:12px;display:flex;gap:10px;justify-content:center}
-.btn{padding:10px 14px;border-radius:10px;border:0;cursor:pointer;font-weight:700}
-.btn.primary{background:var(--accent);color:#002}
-.btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--accent)}
+/* Login Section */
+#loginSection {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+  text-align: center;
+  width: 100%;
+  max-width: 400px;
+}
 
-/* quiz header */
-.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-.timers{display:flex;gap:10px;align-items:center}
-.timer{background:linear-gradient(90deg,var(--accent),#7afcff);padding:6px 10px;border-radius:8px;color:#002;font-weight:700}
-.timer.small{background:transparent;color:var(--muted);font-weight:600}
+#loginSection input[type="text"] {
+  width: 80%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
 
-/* question area */
-.meta-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-.badge{background:var(--glass);padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,0.03);color:var(--muted)}
-.question-box{background:var(--glass);padding:16px;border-radius:12px;border:1px solid rgba(255,255,255,0.03)}
-.question{font-size:18px;margin-bottom:12px}
-.options{display:flex;flex-direction:column;gap:10px}
-.option{background:rgba(255,255,255,0.03);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02);cursor:pointer;transition:all .12s ease}
-.option:hover{transform:translateY(-3px)}
-.option.correct{background:linear-gradient(90deg, rgba(40,167,69,0.16), rgba(40,167,69,0.06));border-color:rgba(40,167,69,0.45);box-shadow:0 8px 30px rgba(40,167,69,0.06)}
-.option.wrong{background:linear-gradient(90deg, rgba(220,53,69,0.16), rgba(220,53,69,0.06));border-color:rgba(220,53,69,0.45);box-shadow:0 8px 30px rgba(220,53,69,0.06)}
-.option.disabled{pointer-events:none;opacity:0.95}
+#loginSection button {
+  padding: 10px 20px;
+  background-color: #1f78ff;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.3s;
+}
 
-/* controls */
-.controls{display:flex;justify-content:space-between;align-items:center;margin-top:12px}
-.control-right{display:flex;gap:12px;align-items:center}
+#loginSection button:hover {
+  background-color: #0066ff;
+}
 
-/* footer */
-.footer{text-align:center;margin-top:14px;color:var(--muted);font-size:13px}
+#loginMsg {
+  margin-top: 10px;
+  color: red;
+  font-size: 14px;
+}
 
-/* modal */
-.modal{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.55);z-index:1200;padding:18px}
-.modal-card{width:100%;max-width:720px;background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.04)}
-.stats-grid{display:flex;gap:12px;justify-content:space-around;margin:12px 0}
-.stat{background:rgba(255,255,255,0.02);padding:12px;border-radius:10px;min-width:120px;text-align:center}
-.stat-num{font-size:20px;font-weight:800;color:var(--accent)}
-.stat-label{color:var(--muted);font-size:13px}
-.analysis{display:flex;flex-direction:column;gap:8px;margin-top:8px}
-.topic-row{display:flex;justify-content:space-between;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;border:1px solid rgba(255,255,255,0.02)}
-.muted{color:var(--muted)}
-.small{font-size:12px}
-.hidden{display:none}
+/* Quiz App */
+#quizApp {
+  display: none;
+  width: 100%;
+  max-width: 700px;
+  background: #fff;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
 
-@media (max-width:640px){
-  .stats-grid{flex-direction:column}
-  .topbar{flex-direction:column;align-items:flex-start;gap:8px}
+#progressText {
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+#topicBadge {
+  display: inline-block;
+  background: #ffcc00;
+  color: #333;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  margin-bottom: 15px;
+}
+
+#questionText {
+  font-size: 18px;
+  margin-bottom: 20px;
+}
+
+#optionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.option {
+  padding: 10px 15px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  cursor: pointer;
+  transition: 0.3s;
+  background: #f8f9fa;
+}
+
+.option:hover {
+  background: #e0e7ff;
+}
+
+.option.correct {
+  background: #c8f7c5 !important;
+  border-color: #2ecc71;
+  color: #2c662d;
+  font-weight: bold;
+}
+
+.option.wrong {
+  background: #ffcccc !important;
+  border-color: #e74c3c;
+  color: #a32a2a;
+  font-weight: bold;
+}
+
+.option.disabled {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Navigation buttons */
+#prevBtn, #nextBtn {
+  padding: 10px 20px;
+  margin-right: 10px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+#nextBtn {
+  background-color: #1f78ff;
+  color: #fff;
+}
+
+#nextBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+#prevBtn {
+  background-color: #ccc;
+  color: #333;
+}
+
+#prevBtn:hover:not(:disabled) {
+  background-color: #b3b3b3;
+}
+
+#nextBtn:hover:not(:disabled) {
+  background-color: #0066ff;
+}
+
+/* Timers */
+#timers {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 15px;
+}
+
+#timers span {
+  font-weight: bold;
+  font-size: 14px;
+}
+
+/* Result Modal */
+#resultModal.hidden {
+  display: none;
+}
+
+#resultModal {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  justify-content:center;
+  align-items:center;
+  z-index: 999;
+}
+
+#resultModal .modal-content {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 500px;
+  text-align: center;
+}
+
+#resultModal .topic-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid #eee;
+}
+
+#resultModal .small.muted {
+  font-size: 12px;
+  color: #666;
+}
+
+#resultModal button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background-color: #1f78ff;
+  color: #fff;
+  transition: 0.3s;
+}
+
+#resultModal button:hover {
+  background-color: #0066ff;
+}
+
+/* Webhook & Export */
+#webhookSection, #exportSection {
+  margin-top: 20px;
+  text-align: center;
+}
+
+#webhookInput {
+  width: 80%;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  margin-bottom: 10px;
+}
+
+#webhookSection button, #exportSection button {
+  padding: 8px 15px;
+  margin: 5px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #1f78ff;
+  color: #fff;
+  transition: 0.3s;
+}
+
+#webhookSection button:hover, #exportSection button:hover {
+  background-color: #0066ff;
+}
+
+#webhookMsg {
+  font-size: 13px;
+  margin-top: 5px;
+  color: green;
 }
