@@ -87,4 +87,95 @@ const BANK=[
   {q:"How to set direction in flex?", a:"flex-direction", o:["flex-direction","direction","flex-flow","align-direction"], topic:"Flexbox"},
   {q:"Shorthand for flex grow/shrink/basis?", a:"flex", o:["flex","flex-basis","flex-flow","flex-grow"], topic:"Flexbox"},
   {q:"Which rule imports fonts?", a:"@import url('font-link');", o:["@font-face","@import url('font-link');","@font-link","@font"], topic:"Misc"},
-  {q:"How to hide element but keep space?", a:"visibility: hidden;", o:["display:none;","visibility:hidden;","opacity:0;","hide:true;"],
+  {q:"How to hide element but keep space?", a:"visibility: hidden;", o:["display:none;","visibility:hidden;","opacity:0;","hide:true;"], topic:"Misc"},
+{q:"Which hides element completely and removes space?", a:"display: none;", o:["visibility:hidden;","display:none;","opacity:0;","hidden:true;"], topic:"Misc"},
+{q:"How to write CSS comment?", a:"/* comment */", o:["// comment","/* comment */","<!-- comment -->","# comment"], topic:"Misc"},
+{q:"What does box-sizing:border-box do?", a:"includes padding in width", o:["excludes padding","includes padding in width","collapses margin","adds border outside"], topic:"Misc"},
+{q:"Which selects class in CSS?", a:".classname", o:["#classname",".classname","classname","*classname"], topic:"Misc"},
+{q:"Which property centers inline text?", a:"text-align", o:["align","text-align","center-inline","inline-align"], topic:"Misc"}
+];
+
+// ---------- START QUIZ ----------
+startWithName.addEventListener('click', ()=>{
+  const val = (nameInput.value||'').trim();
+  if(!val){ loginMsg.textContent = "Please enter your name"; return; }
+  if(hasAttempted(val)){ loginMsg.textContent = "You already attempted."; return; }
+  userName = val;
+  beginQuiz();
+});
+
+nameInput.addEventListener('keydown', (e)=>{ if(e.key==='Enter') startWithName.click(); });
+
+saveWebhookBtn.addEventListener('click', ()=>{
+  const url = (webhookInput.value||'').trim();
+  if(url && !/^https?:\/\//.test(url)){ webhookMsg.textContent='Invalid URL'; return; }
+  saveWebhook(url);
+});
+clearWebhookBtn.addEventListener('click', clearWebhook);
+exportDataBtn.addEventListener('click', ()=>{
+  const raw = localStorage.getItem(attemptedKey)||'{}';
+  const blob = new Blob([raw], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='css_quiz_attempts.json'; a.click(); URL.revokeObjectURL(url);
+});
+
+// ---------- QUIZ FLOW ----------
+function beginQuiz(){
+  questions = shuffle(BANK.slice(0,40));
+  current=0; correct=0; wrong=0; perTopic={};
+  questions.forEach(q=>{ if(!perTopic[q.topic]) perTopic[q.topic]={total:0,correct:0,wrong:0}; perTopic[q.topic].total++; });
+  loginSection.classList.add('hidden'); quizApp.classList.remove('hidden');
+  totalSecondsLeft=TOTAL_SECONDS; perQuestionSecondsLeft=PER_QUESTION_SECONDS;
+  globalTimerEl.textContent=formatTime(totalSecondsLeft); qTimerEl.textContent=formatTime(perQuestionSecondsLeft);
+  startGlobalTimer(); loadQuestion();
+}
+
+// ---------- TIMERS ----------
+function startGlobalTimer(){ stopGlobalTimer(); globalTimerId=setInterval(()=>{ totalSecondsLeft--; globalTimerEl.textContent=formatTime(totalSecondsLeft); if(totalSecondsLeft<0){ clearInterval(globalTimerId); finishQuiz(); } },1000);}
+function stopGlobalTimer(){ if(globalTimerId) clearInterval(globalTimerId);}
+function startQuestionTimer(){ stopQuestionTimer(); perQuestionSecondsLeft=PER_QUESTION_SECONDS; qTimerEl.textContent=formatTime(perQuestionSecondsLeft); questionTimerId=setInterval(()=>{ perQuestionSecondsLeft--; qTimerEl.textContent=formatTime(perQuestionSecondsLeft); if(perQuestionSecondsLeft<=0){ stopQuestionTimer(); if(!answeredThisQ) markWrongDueToTimeout(); setTimeout(goNextAfterAuto,700); } },1000);}
+function stopQuestionTimer(){ if(questionTimerId) clearInterval(questionTimerId);}
+
+// ---------- QUESTION ----------
+function loadQuestion(){
+  answeredThisQ=false; nextBtn.disabled=true; prevBtn.disabled=(current===0);
+  const item=questions[current]; progressText.textContent=`Question ${current+1} / ${questions.length}`;
+  topicBadge.textContent=item.topic; questionText.textContent=item.q;
+  const opts=shuffle(item.o.slice()); optionsList.innerHTML=opts.map(o=>`<div class="option" tabindex="0">${escapeHtml(o)}</div>`).join('');
+  document.querySelectorAll('.option').forEach(el=>{ el.addEventListener('click',()=>selectOption(el,item)); el.addEventListener('keydown',e=>{if(e.key==='Enter') selectOption(el,item);});});
+  startQuestionTimer();
+}
+
+function selectOption(el,item){
+  if(answeredThisQ) return; answeredThisQ=true;
+  document.querySelectorAll('.option').forEach(o=>{ o.classList.add('disabled'); o.style.pointerEvents='none';});
+  const chosen=unescapeHtml(el.textContent);
+  if(chosen===item.a){ el.classList.add('correct'); correct++; perTopic[item.topic].correct++; }
+  else{ el.classList.add('wrong'); wrong++; perTopic[item.topic].wrong++; document.querySelectorAll('.option').forEach(o=>{ if(unescapeHtml(o.textContent)===item.a) o.classList.add('correct'); });}
+  nextBtn.disabled=false; stopQuestionTimer();
+}
+function markWrongDueToTimeout(){ const item=questions[current]; wrong++; perTopic[item.topic].wrong++; document.querySelectorAll('.option').forEach(o=>{ if(unescapeHtml(o.textContent)===item.a) o.classList.add('correct'); o.classList.add('disabled'); }); answeredThisQ=true; }
+nextBtn.addEventListener('click',()=>{ if(nextBtn.disabled) return; goNext();});
+prevBtn.addEventListener('click',()=>{ if(current>0){ current--; loadQuestion(); }});
+
+function goNext(){ current++; if(current<questions.length) loadQuestion(); else finishQuiz(); }
+function goNextAfterAuto(){ if(current<questions.length-1){ current++; loadQuestion();} else finishQuiz();}
+
+// ---------- FINISH ----------
+function finishQuiz(){
+  stopGlobalTimer(); stopQuestionTimer(); nextBtn.disabled=true; prevBtn.disabled=true;
+  const total=questions.length; const percent=Math.round((correct/total)*100);
+  statCorrect.textContent=correct; statWrong.textContent=wrong; statPercent.textContent=percent+'%';
+  let msg="Good job! Here's your summary."; if(percent===100) msg="Perfect 100% — Amazing!"; else if(percent>=80) msg="Great performance!"; else if(percent>=50) msg="Not bad — practice more!"; else msg="Keep practising — you will improve!";
+  resMessage.textContent=msg;
+  topicAnalysis.innerHTML=''; Object.keys(perTopic).forEach(t=>{ const st=perTopic[t]; const p=st.total>0?Math.round((st.correct/st.total)*100):0; const div=document.createElement('div'); div.className='topic-row'; div.innerHTML=`<div>${t}</div><div class="small muted">${st.correct}/${st.total} correct — ${p}%</div>`; topicAnalysis.appendChild(div); });
+  const resultObj={correct,wrong,percent,timeLeft:totalSecondsLeft}; markAttempted(userName,resultObj); sendAttemptToServer(userName,resultObj).then(r=>console.log('Webhook response',r)).catch(e=>console.error(e));
+  resultModal.classList.remove('hidden');
+}
+closeModalBtn.addEventListener('click',()=>{ resultModal.classList.add('hidden');});
+restartBtn.addEventListener('click',()=>{ window.location.reload(); });
+
+function sendAttemptToServer(name,resultObj){ const url=getSavedWebhook(); if(!url) return Promise.resolve({ok:false,reason:'no-webhook'}); return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:name,result:resultObj,ts:Date.now()})}).then(r=>r.json?r:r).catch(e=>{ console.error('Webhook error',e); return {ok:false,error:e};});}
+
+// auto-update timers even if not active
+setInterval(()=>{ if(typeof totalSecondsLeft==='number') globalTimerEl.textContent=formatTime(totalSecondsLeft); if(typeof perQuestionSecondsLeft==='number') qTimerEl.textContent=formatTime(perQuestionSecondsLeft);},1000);
