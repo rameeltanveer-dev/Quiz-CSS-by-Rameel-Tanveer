@@ -418,3 +418,6 @@ exportDataBtn.addEventListener('click', ()=> {
 
 // Close button
 closeAttemptsBtn.addEventListener('click', ()=> allAttemptsSection.classList.add('hidden'));
+function doGet(e) {
+  return ContentService.createTextOutput("Hello, this is working!");
+}
