@@ -8,54 +8,48 @@
 </head>
 <body>
 
-<!-- ---------- LOGIN ---------- -->
+<!-- LOGIN SECTION -->
 <div id="loginSection">
-  <h2>Enter Your Name to Start CSS Quiz</h2>
-  <input type="text" id="nameInput" placeholder="Your Name">
+  <h2>Welcome to CSS Quiz</h2>
+  <input type="text" id="nameInput" placeholder="Enter your name">
   <button id="startWithName">Start Quiz</button>
-  <div id="loginMsg"></div>
+  <div id="loginMsg" class="muted"></div>
   
-  <h3>Webhook (Optional)</h3>
-  <input type="text" id="webhookInput" placeholder="Webhook URL" value="https://script.google.com/macros/s/AKfycbx5mPGLMUXGsCcADkSD09ryOJcZEI9LHsJKMfwU_DCNNWrfdBUVUTyawCL1YVl_rpPS/exec">
-  <button id="saveWebhookBtn">Save</button>
-  <button id="clearWebhookBtn">Clear</button>
-  <div id="webhookMsg"></div>
-
-  <button id="exportDataBtn">Export Attempts JSON</button>
+  <div class="webhook">
+    <input type="text" id="webhookInput" value="https://script.google.com/macros/s/AKfycbx5mPGLMUXGsCcADkSD09ryOJcZEI9LHsJKMfwU_DCNNWrfdBUVUTyawCL1YVl_rpPS/exec">
+    <button id="saveWebhookBtn">Save Webhook</button>
+    <button id="clearWebhookBtn">Clear</button>
+    <div id="webhookMsg" class="muted">Webhook loaded.</div>
+  </div>
 </div>
 
-<!-- ---------- QUIZ ---------- -->
+<!-- QUIZ APP -->
 <div id="quizApp" class="hidden">
-  <div>
-    <span id="progressText"></span>
-    <span id="topicBadge"></span>
+  <div class="timer">
+    <span>Total Time: <span id="globalTimer">40:00</span></span>
+    <span>Q Timer: <span id="qTimer">00:40</span></span>
   </div>
-  <div>
-    <strong>Global Timer:</strong> <span id="globalTimer"></span> |
-    <strong>Q Timer:</strong> <span id="qTimer"></span>
-  </div>
-  <h3 id="questionText"></h3>
+  <div id="progressText"></div>
+  <div id="topicBadge"></div>
+  <div id="questionText"></div>
   <div id="optionsList"></div>
-  <div>
-    <button id="prevBtn">Previous</button>
-    <button id="nextBtn" disabled>Next</button>
-  </div>
+  <button id="prevBtn">Previous</button>
+  <button id="nextBtn" disabled>Next</button>
 </div>
 
-<!-- ---------- RESULT MODAL ---------- -->
+<!-- RESULT MODAL -->
 <div id="resultModal" class="hidden">
-  <div class="modal-content">
-    <h2>Quiz Result</h2>
-    <p id="resMessage"></p>
-    <p>Correct: <span id="statCorrect"></span> | Wrong: <span id="statWrong"></span> | Percent: <span id="statPercent"></span></p>
-    <div id="topicAnalysis"></div>
-    <div>
-      <button id="closeModalBtn">Close</button>
-      <button id="restartBtn">Restart Quiz</button>
-    </div>
-  </div>
+  <h2>Quiz Completed!</h2>
+  <div id="resMessage"></div>
+  <div>Correct: <span id="statCorrect"></span></div>
+  <div>Wrong: <span id="statWrong"></span></div>
+  <div>Percent: <span id="statPercent"></span></div>
+  <div id="topicAnalysis"></div>
+  <button id="closeModalBtn">Close</button>
+  <button id="restartBtn">Restart Quiz</button>
+  <button id="exportDataBtn">Export Attempts</button>
 </div>
 
-<script src="script.js"></script>
+<script src="script.js" defer></script>
 </body>
 </html>
