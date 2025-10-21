@@ -441,5 +441,22 @@ function sendQuizDataToSheet(name, correct, wrong, percent, timeLeft) {
   .then(msg => console.log("Data sent:", msg))
   .catch(err => console.error("Error:", err));
 }
-
+function sendQuizDataToSheet(name, correct, wrong, percent, timeLeft) {
+  fetch("https://script.google.com/macros/s/AKfycbz6n1gUJLO2cfQx6-rH2dIqOyhiCg0WdcyZFr_3_ZqUD6tJ9jkvxtALd4yOQSCmCaYd/exec", {
+    method: "POST",
+    body: JSON.stringify({
+      name: name,
+      correct: correct,
+      wrong: wrong,
+      percent: percent,
+      timeLeft: timeLeft
+    }),
+    headers: {
+      "Content-Type": "application/json"
+    }
+  })
+  .then(res => res.text())
+  .then(data => console.log("✅ Data saved:", data))
+  .catch(err => console.error("❌ Error:", err));
+}
 sendQuizDataToSheet(userName, correctCount, wrongCount, percentScore, remainingSeconds);
