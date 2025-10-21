@@ -1,14 +1,4 @@
-/* script.js
-   - Login with name (one attempt per name via localStorage)
-   - 40 questions total (from question bank), shuffled
-   - Total timer: 40 minutes
-   - Per-question timer: 40 seconds -> auto next when expires
-   - Answer lock: cannot change after selection
-   - Auto-correct highlight
-   - Result modal with topic-wise analysis
-   - Export attempts JSON
-   - Optional webhook (Google Apps Script) to send results to Google Sheet
-*/
+/* CSS Quiz JS - Complete by Rameel Tanveer */
 
 // ---------- CONFIG ----------
 const TOTAL_MINUTES = 40;
@@ -73,11 +63,11 @@ const BANK = [
 // ---------- STATE ----------
 let userName = null;
 let attemptedKey = 'css_quiz_attempts_v1';
-let questions = []; // shuffled selected questions
+let questions = [];
 let current = 0;
 let correct = 0;
 let wrong = 0;
-let perTopic = {}; // {topic:{total,correct,wrong}}
+let perTopic = {};
 let totalSecondsLeft = TOTAL_SECONDS;
 let perQuestionSecondsLeft = PER_QUESTION_SECONDS;
 let globalTimerId = null;
@@ -89,12 +79,10 @@ const loginSection = document.getElementById('loginSection');
 const nameInput = document.getElementById('nameInput');
 const startWithName = document.getElementById('startWithName');
 const loginMsg = document.getElementById('loginMsg');
-
 const webhookInput = document.getElementById('webhookInput');
 const saveWebhookBtn = document.getElementById('saveWebhookBtn');
 const clearWebhookBtn = document.getElementById('clearWebhookBtn');
 const webhookMsg = document.getElementById('webhookMsg');
-
 const exportDataBtn = document.getElementById('exportDataBtn');
 
 const quizApp = document.getElementById('quizApp');
@@ -116,364 +104,99 @@ const topicAnalysis = document.getElementById('topicAnalysis');
 const closeModalBtn = document.getElementById('closeModalBtn');
 const restartBtn = document.getElementById('restartBtn');
 
-// ---------- HELPERS ----------
-function formatTime(s){ const m=Math.floor(s/60).toString().padStart(2,'0'); const sec=(s%60).toString().padStart(2,'0'); return `${m}:${sec}`; }
-
-function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
-
-// localStorage check: store attempted names as object {name:{time, result}}
-function hasAttempted(name){
-  const raw = localStorage.getItem(attemptedKey);
-  if(!raw) return false;
-  try{ const t = JSON.parse(raw); return !!t[name.trim().toLowerCase()]; }catch(e){ return false; }
-}
-function markAttempted(name, resultObj){
-  const raw = localStorage.getItem(attemptedKey);
-  let t = {};
-  if(raw){ try{ t = JSON.parse(raw) }catch(e){ t = {} } }
-  t[name.trim().toLowerCase()] = {time: Date.now(), result: resultObj};
-  localStorage.setItem(attemptedKey, JSON.stringify(t));
-}
-
-// webhook storage
-const WEBHOOK_KEY = 'css_quiz_webhook_v1';
-function getSavedWebhook(){ return localStorage.getItem(WEBHOOK_KEY) || ''; }
-function saveWebhook(url){
-  if(!url){ localStorage.removeItem(WEBHOOK_KEY); webhookMsg.textContent = 'Webhook cleared.'; return; }
-  localStorage.setItem(WEBHOOK_KEY, url.trim()); webhookMsg.textContent = 'Webhook saved.'; webhookInput.value = url.trim();
-}
-function clearWebhook(){ localStorage.removeItem(WEBHOOK_KEY); webhookInput.value = ''; webhookMsg.textContent = 'Webhook cleared.'; }
-
-// ---------- START QUIZ FLOW ----------
-startWithName.addEventListener('click', ()=>{
-  const val = (nameInput.value || '').trim();
-  if(!val){ loginMsg.textContent = "Please enter your name"; return; }
-  if(hasAttempted(val)){ loginMsg.textContent = "You have already attempted this quiz."; return; }
-  userName = val;
-  beginQuiz();
-});
-
-// allow Enter key
-nameInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') startWithName.click(); });
-
-// webhook buttons
-saveWebhookBtn.addEventListener('click', ()=> {
-  const url = (webhookInput.value||'').trim();
-  if(url && !/^https?:\/\//.test(url)){ webhookMsg.textContent = 'Invalid URL (must start with http/https).'; return; }
-  saveWebhook(url);
-});
-clearWebhookBtn.addEventListener('click', ()=> clearWebhook());
-
-// export button
-exportDataBtn.addEventListener('click', ()=> {
-  const key = attemptedKey;
-  const raw = localStorage.getItem(key) || '{}';
-  try {
-    const parsed = JSON.parse(raw);
-    const blob = new Blob([JSON.stringify(parsed, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'css_quiz_attempts_by_rameel.json';
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  } catch(e){ alert('No data or JSON parse error.'); console.error(e); }
-});
-
-// populate webhook input if saved
-try{ webhookInput.value = getSavedWebhook(); if(webhookInput.value) webhookMsg.textContent = 'Webhook loaded.'; }catch(e){}
-
-// ---------- beginQuiz ----------
-function beginQuiz(){
-  questions = shuffle(BANK.slice(0,40)); // ensure 40
-  current = 0; correct = 0; wrong = 0; perTopic = {};
-  questions.forEach(q=> { if(!perTopic[q.topic]) perTopic[q.topic] = {total:0,correct:0,wrong:0}; perTopic[q.topic].total++; });
-
-  loginSection.classList.add('hidden');
-  quizApp.classList.remove('hidden');
-
-  totalSecondsLeft = TOTAL_SECONDS;
-  perQuestionSecondsLeft = PER_QUESTION_SECONDS;
-  globalTimerEl.textContent = formatTime(totalSecondsLeft);
-  qTimerEl.textContent = formatTime(perQuestionSecondsLeft);
-
-  startGlobalTimer();
-  loadQuestion();
-}
-
-// ---------- TIMERS ----------
-function startGlobalTimer(){
-  stopGlobalTimer();
-  globalTimerId = setInterval(()=>{
-    totalSecondsLeft--;
-    if(totalSecondsLeft < 0){ clearInterval(globalTimerId); submitOnTimeout(); return; }
-    globalTimerEl.textContent = formatTime(totalSecondsLeft);
-  }, 1000);
-}
-function stopGlobalTimer(){ if(globalTimerId) clearInterval(globalTimerId); }
-
-function startQuestionTimer(){
-  stopQuestionTimer();
-  perQuestionSecondsLeft = PER_QUESTION_SECONDS;
-  qTimerEl.textContent = formatTime(perQuestionSecondsLeft);
-  questionTimerId = setInterval(()=>{
-    perQuestionSecondsLeft--;
-    qTimerEl.textContent = formatTime(perQuestionSecondsLeft);
-    if(perQuestionSecondsLeft <= 0){
-      stopQuestionTimer();
-      if(!answeredThisQ){
-        markWrongDueToTimeout();
-      }
-      setTimeout(()=> goNextAfterAuto(), 700);
-    }
-  }, 1000);
-}
-function stopQuestionTimer(){ if(questionTimerId) clearInterval(questionTimerId); }
-
-// ---------- QUESTION RENDER ----------
-function loadQuestion(){
-  answeredThisQ = false;
-  nextBtn.disabled = true;
-  prevBtn.disabled = (current === 0);
-  const item = questions[current];
-  progressText.textContent = `Question ${current+1} / ${questions.length}`;
-  topicBadge.textContent = item.topic;
-  questionText.textContent = item.q;
-
-  const opts = shuffle(item.o.slice());
-  optionsList.innerHTML = opts.map(o => `<div class="option" tabindex="0">${escapeHtml(o)}</div>`).join('');
-  document.querySelectorAll('.option').forEach(el=>{
-    el.addEventListener('click', ()=> selectOption(el, item));
-    el.addEventListener('keydown', e=>{ if(e.key === 'Enter') selectOption(el, item); });
-  });
-
-  startQuestionTimer();
-}
-
-function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function unescapeHtml(s){ return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&'); }
-
-// ---------- SELECTION ----------
-function selectOption(el, item){
-  if(answeredThisQ) return;
-  answeredThisQ = true;
-  document.querySelectorAll('.option').forEach(o=>{ o.classList.add('disabled'); o.style.pointerEvents='none'; });
-  const chosen = unescapeHtml(el.textContent);
-  if(chosen === item.a){
-    el.classList.add('correct'); correct++; perTopic[item.topic].correct++;
-  } else {
-    el.classList.add('wrong'); wrong++; perTopic[item.topic].wrong++;
-    document.querySelectorAll('.option').forEach(o=>{
-      if(unescapeHtml(o.textContent) === item.a) o.classList.add('correct');
-    });
-  }
-  nextBtn.disabled = false;
-  stopQuestionTimer();
-}
-
-// mark wrong due to timeout (no answer)
-function markWrongDueToTimeout(){
-  const item = questions[current];
-  wrong++; perTopic[item.topic].wrong++;
-  document.querySelectorAll('.option').forEach(o=>{
-    if(unescapeHtml(o.textContent) === item.a) o.classList.add('correct');
-    o.classList.add('disabled');
-  });
-  answeredThisQ = true;
-}
-
-// ---------- NAV ----------
-nextBtn.addEventListener('click', ()=> { if(nextBtn.disabled) return; goNext(); });
-prevBtn.addEventListener('click', ()=> { if(current>0){ current--; loadQuestion(); } });
-
-function goNext(){
-  current++;
-  if(current < questions.length){ loadQuestion(); }
-  else { finishQuiz(); }
-}
-function goNextAfterAuto(){
-  if(current < questions.length - 1){
-    current++;
-    loadQuestion();
-  } else {
-    finishQuiz();
-  }
-}
-
-// ---------- FINISH / SUBMIT ----------
-function submitOnTimeout(){ finishQuiz(); }
-
-function sendAttemptToServer(name, resultObj){
-  const url = getSavedWebhook();
-  if(!url) return Promise.resolve({ ok: false, reason: 'no-webhook' });
-  const payload = { name: name, result: resultObj, ts: Date.now() };
-  return fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  }).then(r => r.json ? r : r).catch(err => { console.error('Webhook error', err); return { ok:false, error:err }; });
-}
-
-function finishQuiz(){
-  stopGlobalTimer();
-  stopQuestionTimer();
-  nextBtn.disabled = true;
-  prevBtn.disabled = true;
-
-  const total = questions.length;
-  const percent = Math.round((correct/total)*100);
-  statCorrect.textContent = correct;
-  statWrong.textContent = wrong;
-  statPercent.textContent = percent + '%';
-  let msg = "Good job! Here's your summary.";
-  if(percent === 100) msg = "Perfect 100% — Amazing!";
-  else if(percent >= 80) msg = "Great performance!";
-  else if(percent >= 50) msg = "Not bad — practice more!";
-  else msg = "Keep practising — you will improve!";
-  resMessage.textContent = msg;
-
-  topicAnalysis.innerHTML = '';
-  Object.keys(perTopic).forEach(t=>{
-    const st = perTopic[t];
-    const p = st.total>0 ? Math.round((st.correct/st.total)*100) : 0;
-    const div = document.createElement('div');
-    div.className = 'topic-row';
-    div.innerHTML = `<div>${t}</div><div class="small muted">${st.correct}/${st.total} correct — ${p}%</div>`;
-    topicAnalysis.appendChild(div);
-  });
-
-  const resultObj = {correct, wrong, percent, timeLeft: totalSecondsLeft};
-  markAttempted(userName, resultObj);
-  sendAttemptToServer(userName, resultObj).then(resp=>{ console.log('Webhook response', resp); }).catch(e=>console.error(e));
-
-  resultModal.classList.remove('hidden');
-}
-
-// modal buttons
-closeModalBtn.addEventListener('click', ()=>{ resultModal.classList.add('hidden'); });
-restartBtn.addEventListener('click', ()=>{ window.location.reload(); });
-
-// update visible timers even if not started
-setInterval(()=>{
-  if(typeof totalSecondsLeft === 'number') globalTimerEl.textContent = formatTime(totalSecondsLeft);
-  if(typeof perQuestionSecondsLeft === 'number') qTimerEl.textContent = formatTime(perQuestionSecondsLeft);
-}, 1000);
-                             // ---------- WEBHOOK INTEGRATION ----------
-const DEFAULT_WEBHOOK_URL = 'https://script.google.com/macros/s/AKfycbx5mPGLMUXGsCcADkSD09ryOJcZEI9LHsJKMfwU_DCNNWrfdBUVUTyawCL1YVl_rpPS/exec';
-
-function getSavedWebhook() {
-  return localStorage.getItem(WEBHOOK_KEY) || DEFAULT_WEBHOOK_URL;
-}
-
-function sendAttemptToServer(name, resultObj){
-  const url = getSavedWebhook();
-  if(!url) return Promise.resolve({ ok: false, reason: 'no-webhook' });
-
-  const payload = { 
-    name: name, 
-    result: resultObj, 
-    ts: Date.now() 
-  };
-
-  // POST attempt to webhook
-  return fetch(url, {
-    method: 'POST',
-    headers: {'Content-Type':'application/json'},
-    body: JSON.stringify(payload)
-  })
-  .then(r => r.json ? r : r)
-  .catch(err => {
-    console.error('Webhook error', err);
-    return { ok:false, error:err };
-  });
-}
-
-// یہ فنکشن finishQuiz() میں پہلے ہی call ہو رہا ہے:
-// sendAttemptToServer(userName, resultObj).then(...).catch(...);
-
 const allAttemptsSection = document.getElementById('allAttemptsSection');
 const attemptsTableBody = document.querySelector('#attemptsTable tbody');
 const closeAttemptsBtn = document.getElementById('closeAttemptsBtn');
 
-exportDataBtn.addEventListener('click', ()=> {
-  // Show table instead of download
-  attemptsTableBody.innerHTML = ''; // clear
-  const raw = localStorage.getItem(attemptedKey) || '{}';
-  let parsed = {};
-  try{
-    parsed = JSON.parse(raw);
-  } catch(e){ console.error(e); }
-  
+// ---------- HELPERS ----------
+function formatTime(s){ const m=Math.floor(s/60).toString().padStart(2,'0'); const sec=(s%60).toString().padStart(2,'0'); return `${m}:${sec}`; }
+function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]] } return a; }
+function escapeHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function unescapeHtml(s){ return String(s).replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&'); }
+function hasAttempted(name){ const raw=localStorage.getItem(attemptedKey); if(!raw) return false; try{ const t=JSON.parse(raw); return !!t[name.trim().toLowerCase()]; }catch(e){ return false; } }
+function markAttempted(name,resultObj){ const raw=localStorage.getItem(attemptedKey); let t={}; if(raw){ try{ t=JSON.parse(raw) }catch(e){ t={}; } } t[name.trim().toLowerCase()]={time:Date.now(),result:resultObj}; localStorage.setItem(attemptedKey,JSON.stringify(t)); }
+const WEBHOOK_KEY = 'css_quiz_webhook_v1';
+function getSavedWebhook(){ return localStorage.getItem(WEBHOOK_KEY) || ''; }
+function saveWebhook(url){ if(!url){ localStorage.removeItem(WEBHOOK_KEY); webhookMsg.textContent='Webhook cleared.'; return; } localStorage.setItem(WEBHOOK_KEY,url.trim()); webhookMsg.textContent='Webhook saved.'; webhookInput.value=url.trim(); }
+function clearWebhook(){ localStorage.removeItem(WEBHOOK_KEY); webhookInput.value=''; webhookMsg.textContent='Webhook cleared.'; }
+
+// ---------- QUIZ FLOW ----------
+startWithName.addEventListener('click',()=>{
+  const val=(nameInput.value||'').trim();
+  if(!val){ loginMsg.textContent="Please enter your name"; return; }
+  if(hasAttempted(val)){ loginMsg.textContent="You have already attempted this quiz."; return; }
+  userName=val; beginQuiz();
+});
+nameInput.addEventListener('keydown',(e)=>{ if(e.key==='Enter') startWithName.click(); });
+saveWebhookBtn.addEventListener('click',()=>{ const url=(webhookInput.value||'').trim(); if(url && !/^https?:\/\//.test(url)){ webhookMsg.textContent='Invalid URL'; return; } saveWebhook(url); });
+clearWebhookBtn.addEventListener('click',()=>clearWebhook());
+closeModalBtn.addEventListener('click',()=>resultModal.classList.add('hidden'));
+restartBtn.addEventListener('click',()=>window.location.reload());
+
+// export table
+exportDataBtn.addEventListener('click',()=>{
+  attemptsTableBody.innerHTML='';
+  const raw=localStorage.getItem(attemptedKey)||'{}';
+  let parsed={};
+  try{ parsed=JSON.parse(raw); }catch(e){console.error(e);}
   Object.keys(parsed).forEach(name=>{
-    const r = parsed[name].result;
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${name}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${r.percent}%</td><td>${formatTime(r.timeLeft)}</td>`;
+    const r=parsed[name].result;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${name}</td><td>${r.correct}</td><td>${r.wrong}</td><td>${r.percent}%</td><td>${formatTime(r.timeLeft)}</td>`;
     attemptsTableBody.appendChild(tr);
   });
-
   allAttemptsSection.classList.remove('hidden');
 });
+closeAttemptsBtn.addEventListener('click',()=>allAttemptsSection.classList.add('hidden'));
 
-// Close button
-closeAttemptsBtn.addEventListener('click', ()=> allAttemptsSection.classList.add('hidden'));
-function doGet(e) {
-  return ContentService.createTextOutput("Hello, this is working!");
+// ---------- BEGIN QUIZ ----------
+function beginQuiz(){
+  questions=shuffle(BANK.slice(0,40));
+  current=0; correct=0; wrong=0; perTopic={};
+  questions.forEach(q=>{ if(!perTopic[q.topic]) perTopic[q.topic]={total:0,correct:0,wrong:0}; perTopic[q.topic].total++; });
+
+  loginSection.classList.add('hidden'); quizApp.classList.remove('hidden');
+  totalSecondsLeft=TOTAL_SECONDS; perQuestionSecondsLeft=PER_QUESTION_SECONDS;
+  globalTimerEl.textContent=formatTime(totalSecondsLeft);
+  qTimerEl.textContent=formatTime(perQuestionSecondsLeft);
+  startGlobalTimer(); loadQuestion();
 }
-function sendQuizDataToSheet(name, correct, wrong, percent, timeLeft) {
-  const webhookURL = document.getElementById("webhookInput").value;
 
-  const data = {
-    name: name,
-    correct: correct,
-    wrong: wrong,
-    percent: percent,
-    timeLeft: timeLeft
-  };
+// ---------- TIMERS ----------
+function startGlobalTimer(){ stopGlobalTimer(); globalTimerId=setInterval(()=>{ totalSecondsLeft--; if(totalSecondsLeft<0){ clearInterval(globalTimerId); finishQuiz(); return; } globalTimerEl.textContent=formatTime(totalSecondsLeft); },1000); }
+function stopGlobalTimer(){ if(globalTimerId) clearInterval(globalTimerId); }
+function startQuestionTimer(){ stopQuestionTimer(); perQuestionSecondsLeft=PER_QUESTION_SECONDS; qTimerEl.textContent=formatTime(perQuestionSecondsLeft); questionTimerId=setInterval(()=>{ perQuestionSecondsLeft--; qTimerEl.textContent=formatTime(perQuestionSecondsLeft); if(perQuestionSecondsLeft<=0){ stopQuestionTimer(); if(!answeredThisQ){ markWrongDueToTimeout(); } setTimeout(()=>goNextAfterAuto(),700); } },1000); }
+function stopQuestionTimer(){ if(questionTimerId) clearInterval(questionTimerId); }
 
-  fetch(webhookURL, {
-    method: "POST",
-    contentType: "application/json",
-    body: JSON.stringify(data)
-  })
-  .then(res => res.text())
-  .then(msg => console.log("Data sent:", msg))
-  .catch(err => console.error("Error:", err));
+// ---------- LOAD QUESTION ----------
+function loadQuestion(){
+  answeredThisQ=false; nextBtn.disabled=true; prevBtn.disabled=(current===0);
+  const item=questions[current];
+  progressText.textContent=`Question ${current+1} / ${questions.length}`;
+  topicBadge.textContent=item.topic;
+  questionText.textContent=item.q;
+  const opts=shuffle(item.o.slice());
+  optionsList.innerHTML=opts.map(o=>`<div class="option" tabindex="0">${escapeHtml(o)}</div>`).join('');
+  document.querySelectorAll('.option').forEach(el=>{ el.addEventListener('click',()=>selectOption(el,item)); el.addEventListener('keydown',e=>{ if(e.key==='Enter') selectOption(el,item); }); });
+  startQuestionTimer();
 }
-function sendQuizDataToSheet(name, correct, wrong, percent, timeLeft) {
-  fetch("https://script.google.com/macros/s/AKfycbz6n1gUJLO2cfQx6-rH2dIqOyhiCg0WdcyZFr_3_ZqUD6tJ9jkvxtALd4yOQSCmCaYd/exec", {
-    method: "POST",
-    body: JSON.stringify({
-      name: name,
-      correct: correct,
-      wrong: wrong,
-      percent: percent,
-      timeLeft: timeLeft
-    }),
-    headers: {
-      "Content-Type": "application/json"
-    }
-  })
-  .then(res => res.text())
-  .then(data => console.log("✅ Data saved:", data))
-  .catch(err => console.error("❌ Error:", err));
+
+// ---------- SELECTION ----------
+function selectOption(el,item){
+  if(answeredThisQ) return; answeredThisQ=true;
+  document.querySelectorAll('.option').forEach(o=>{ o.classList.add('disabled'); o.style.pointerEvents='none'; });
+  const chosen=unescapeHtml(el.textContent);
+  if(chosen===item.a){ el.classList.add('correct'); correct++; perTopic[item.topic].correct++; }
+  else { el.classList.add('wrong'); wrong++; perTopic[item.topic].wrong++; document.querySelectorAll('.option').forEach(o=>{ if(unescapeHtml(o.textContent)===item.a) o.classList.add('correct'); }); }
+  nextBtn.disabled=false; stopQuestionTimer();
 }
-function doPost(e) {
-  const sheet = SpreadsheetApp.openById("1odcLk_CeKcsQUbqMDk7OcoXgLnpyVyMmO_TjeKhfn2I");
-  const ws = sheet.getSheetByName("Sheet1");
+function markWrongDueToTimeout(){ const item=questions[current]; wrong++; perTopic[item.topic].wrong++; document.querySelectorAll('.option').forEach(o=>{ if(unescapeHtml(o.textContent)===item.a) o.classList.add('correct'); o.classList.add('disabled'); }); answeredThisQ=true; }
 
-  const data = JSON.parse(e.postData.contents);
+// ---------- NAV ----------
+nextBtn.addEventListener('click',()=>{ if(!nextBtn.disabled) goNext(); });
+prevBtn.addEventListener('click',()=>{ if(current>0){ current--; loadQuestion(); }});
+function goNext(){ current++; if(current<questions.length){ loadQuestion(); } else { finishQuiz(); } }
+function goNextAfterAuto(){ if(current<questions.length-1){ current++; loadQuestion(); } else { finishQuiz(); } }
 
-  ws.appendRow([
-    new Date(),
-    data.name,
-    data.correct,
-    data.wrong,
-    data.percent,
-    data.timeLeft
-  ]);
-
-  return ContentService.createTextOutput("Success");
-}
-sendQuizDataToSheet(userName, correctCount, wrongCount, percentScore, remainingSeconds);
+// ---------- FINISH QUIZ ----------
+function finishQuiz(){
